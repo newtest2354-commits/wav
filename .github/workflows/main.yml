@@ -33,12 +33,20 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
+        pip install requests beautifulsoup4 maxminddb geoip2
+        
+    - name: Setup GeoIP databases
+      run: |
+        mkdir -p GeoIP
+        echo "AccountID 1291451" > GeoIP.conf
+        echo "LicenseKey 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" >> GeoIP.conf
+        echo "EditionIDs GeoLite2-ASN GeoLite2-City GeoLite2-Country" >> GeoIP.conf
+        docker run --rm -v $PWD/GeoIP.conf:/etc/GeoIP.conf -v $PWD/GeoIP:/usr/share/GeoIP maxmindinc/geoipupdate geoipupdate -v
         
     - name: Clean old config files
       run: |
         rm -rf configs/
-        mkdir -p configs/telegram configs/github configs/combined configs/country configs/geoip_cache
+        mkdir -p configs/telegram configs/github configs/combined configs/country
         
     - name: Run Telegram Config Extractor
       run: python telegram_extractor.py
@@ -50,10 +58,9 @@ jobs:
         
     - name: Combine Configs
       run: python combine_configs.py
-        
-    - name: Update GeoIP Database and Classify Configs
-      run: python geoip_classifier.py
-      timeout-minutes: 10
+      
+    - name: Geolocation Analysis
+      run: python geolocation_analyzer.py
         
     - name: Create summary
       run: |
